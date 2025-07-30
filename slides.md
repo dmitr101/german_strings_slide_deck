@@ -7,7 +7,7 @@ paginate: true
 
 # German strings
 
-das string?
+eine deutsche string - a case for yet another string type
 
 ---
 

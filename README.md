@@ -12,6 +12,8 @@ https://www.tunglevo.com/note/an-optimization-thats-impossible-in-rust/
 
 https://the-mikedavis.github.io/posts/german-string-optimizations-in-spellbook/
 
+https://devblogs.microsoft.com/oldnewthing/20240510-00/?p=109742
+
 ## How to build
 
 Made using Marp in VS Code with Marp for VS Code extension. Can be built with `marp-cli`. Need relatively recent node and npm.
