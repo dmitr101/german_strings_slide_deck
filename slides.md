@@ -56,6 +56,14 @@ Some tradeoffs
 
 ---
 
+# A spinoff - don't try to beat std::memcmp
+
+---
+
+# A spinoff - representation and UB - array vs union
+
+---
+
 # Complain a bit about std interface?
 
 ---
