@@ -18,6 +18,19 @@ pre {
 code {
   font-size: 0.85em; /* For inline code */
 }
+
+/* Two column layout for images */
+.two-columns {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: center;
+}
+
+.two-columns > div {
+  flex: 1;
+  text-align: center;
+}
 </style>
 
 # German strings
@@ -71,13 +84,26 @@ note: If you only want to know what this string type has to do with Germany you'
 
 ### So why would we need any more?
 
-* 2x smaller memory footprint for the string object
-* 30-50% faster search and sorting operations
+<div class="two-columns">
+<div>
 
-TODO: A chart showing sorting depending on array size and std::count if for the same measure
+![w:420](assets//clang_libcxx_graphs/StringEqualityComparison_performance.png)
+
+</div>
+<div>
+
+![w:420](assets/clang_libcxx_graphs/StringSorting_performance.png)
+
+</div>
+</div>
+
+* 50-100% faster search and sorting operations
+* 2x smaller memory footprint for the string object
 
 <!-- 
 note: Based on totally trust-worthy benchmarks!
+latest clang and libstdcxx
+todo: maybe log scale for Y?
 -->
 
 --- 
@@ -398,6 +424,10 @@ int prefix_memcmp(std::uint32_t a, std::uint32_t b, int n)
 <!-- 
 note: This is approximately 2x faster than std::memcmp for 4 byte values
 -->
+
+---
+
+## Looking at benchmarks
 
 
 ---
