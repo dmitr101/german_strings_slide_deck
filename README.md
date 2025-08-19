@@ -5,6 +5,6 @@ Made using Marp in VS Code with Marp for VS Code extension. Can be built with `m
 `npm install -g @marp-team/marp-cli`
 
 
-`marp slides.md --html`
+`marp slides.md --html -o index.html`
 
 Should also work with npm scripts from package definition. Mostly copied from https://github.com/yhatt/marp-cli-example .
