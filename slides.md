@@ -60,7 +60,7 @@ StockholmCpp 0x38
 
 - Intro and performance promises
 - Implementation details
-- Test on an almost real application
+- Some use cases
 - Name context
 
 <!-- 
@@ -77,6 +77,12 @@ note: If you only want to know what this string type has to do with Germany you'
 * `std::basic_string<>` - owning mutable string, convertible to a C string, usually has SSO and takes up 32 bytes
 * `std::basic_string_view<>` - a view into some string data, may not be null terminated
 * Your favorite custom implementation
+
+<!-- 
+`<const> char*` - may be heap, may be stack, may be static, requires strlen to do anything with but takes up just 8 bytes
+in this talk I talking strictly about modern consumer computers which are predominantly 64bits and little endian
+
+-->
 
 ---
 
@@ -257,7 +263,7 @@ note: Memory-mapped files, request scope, etc
 ## **Everything!**
 
 * *Sometimes* own the data
-* Immutable
+* Be immutable
 * 12 bytes for small strings
 * No null termination
 * Always have a 4-byte prefix locally
@@ -331,6 +337,11 @@ struct german_string
 
 * Clean translation of the diagram
 * **Does not work!**
+
+<!-- 
+note: Will take up 24 bytes, because the union will want to be aligned
+
+-->
 
 ---
 
@@ -423,6 +434,7 @@ int prefix_memcmp(std::uint32_t a, std::uint32_t b, int n)
 
 <!-- 
 note: This is approximately 2x faster than std::memcmp for 4 byte values
+branchless, may be counted as SWAR maybe?
 -->
 
 ---
@@ -432,26 +444,31 @@ note: This is approximately 2x faster than std::memcmp for 4 byte values
 
 ---
 
-## Does it actually work? - 1BRC
+## Applications - 1BRC
 
 <div class="centered-image">
 
 ![w:500](assets/1brc.png)
 
+</div>
+
 <!-- 
+2023 viral data aggregation challenge
 note: Very fresh a definitely not biased. Aggregating a large volume of data from a CSV
 -->
 
-</div>
-
 ---
 
-## Does it actually work? - 1BRC
+## Applications - 1BRC
+
+The plan:
 
 - Find a simple open source C++ implementation
 - Replace all `std::string` with `gs::german_string`
+- PROFIT!
 
-TODO: Do this and report result here
+* Simon Toths - https://github.com/HappyCerberus/1brc
+
 
 <!-- 
 note: Maybe a demo
@@ -459,7 +476,162 @@ note: Maybe a demo
 
 ---
 
-## Where can I get some?
+## Applications - 1BRC
+
+<div class="centered-image">
+
+![w:1000](assets/1brc_base_hyperfine.png)
+
+</div>
+
+* 🎉🎉🎉
+* But wait...
+
+<!-- 
+note: We basically took unoptimized version that did copy strings from the file to std::string
+-->
+
+---
+
+## Applications - 1BRC
+
+Applying the same thing to the optimized code
+
+<div class="centered-image">
+
+![w:1000](assets/1brc_max_hyperfine.png)
+
+</div>
+
+* We are ~10% slower...
+* Hashing-heavy, small-key set
+* A conditional on loading the data pointer hurts
+
+<!-- 
+note: Optimized version already used string_views and rarelly compared them, strings are city names and thereffore are mostly small
+-->
+
+---
+
+## Applications - Toy LSM-tree KV-store
+
+- Think HBase, LevelDB, RocksDB, etc. - but smaller and simpler
+- Memory-mapped storage, single level of compaction
+
+<div class="centered-image">
+
+![w:700](assets/lsm-diagram.webp)
+
+</div>
+
+<!-- 
+note: memory mapping is inadvisable
+-->
+
+---
+
+## Applications - Toy LSM-tree KV-store
+
+```cpp
+template <typename StringType>
+class LSMTree
+{
+    std::map<StringType, StringType> memtable_;
+    std::vector<std::unique_ptr<SSTable<StringType>>> sstables_;
+    std::string base_dir_;
+    int next_sstable_id_;
+};
+
+template <typename StringType>
+class SSTable
+{
+private:
+    std::string filename_;
+    mutable std::vector<std::pair<StringType, StringType>> data_cache_; // Cache for parsed data (sorted by key)
+    mutable bool cache_loaded_;
+    mutable std::unique_ptr<MappedFile> mapped_file_; // Persistent mapping
+};
+```
+
+<!-- 
+note: 
+-->
+
+---
+
+## Applications - Toy LSM-tree KV-store
+
+```cpp
+std::optional<StringType> LSMTree::get(const StringType &key)
+{
+    auto result = memtable_.get(key); // std::map look-up
+    if (result.has_value())
+    {
+        return result;
+    }
+
+    for (auto& sstable : std::views::reverse(sstables_))
+    {
+        result = sstable->get(key); // std::lower_bound
+        if (result.has_value())
+        {
+            return result;
+        }
+    }
+    return std::nullopt;
+}
+```
+---
+
+## Applications - Toy LSM-tree KV-store
+
+* A *lot* of string comparisons happen in both write and read paths
+* We can avoid copying data in addition to `<=>` performance boost
+
+<style scoped>
+.no-gap img {
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.no-gap p {
+  margin: 0 !important;
+  line-height: 0 !important;
+}
+</style>
+
+<div class="centered-image no-gap">
+
+![w:1000](assets/lsm-ingest-bench.png)
+
+![w:1000](assets/lsm-read-bench.png)
+
+</div>
+
+<!-- 
+note: 
+-->
+
+---
+
+## Applications - Real World
+
+<style scoped>
+    .two-columns {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: left;
+}
+
+.two-columns > div {
+  flex: 1;
+  text-align: left;
+}
+    </style>
+
+<div class="two-columns">
+<div>
 
 Most high performance OLAP systems have them!
 
@@ -468,7 +640,48 @@ Most high performance OLAP systems have them!
 - Polars
 - Velox
 
-Implementation written for this talk: https://github.com/dmitr101/german_strings
+</div>
+<div>
+
+![w:500](assets/combined_db_logos.png)
+
+</div>
+</div>
+
+---
+
+## Applications - Real World
+
+<style scoped>
+    .two-columns {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: left;
+}
+
+.two-columns > div {
+  flex: 1;
+  text-align: left;
+}
+    </style>
+
+<div class="two-columns">
+<div>
+
+DataFusion posts
+
+- Faster parsing
+- Significant improvement in E2E query performance
+
+</div>
+<div>
+
+![w:500](assets/df_total_perf.png)
+![w:500](assets/df_e2e_query_perf.png)
+
+</div>
+</div>
 
 ---
 
@@ -488,15 +701,24 @@ note: Because of this guy
 
 ## Sources and further info
 If you want to learn more about German strings, check out these resources:
+<style scoped>
+ul {
+    font-size: 0.6em;
+}
+</style>
+
 - https://cedardb.com/blog/german_strings/
 - https://cedardb.com/blog/strings_deep_dive/
 - https://datafusion.apache.org/blog/2024/09/13/string-view-german-style-strings-part-1/
 - https://datafusion.apache.org/blog/2024/09/13/string-view-german-style-strings-part-2/
 - https://www.tunglevo.com/note/an-optimization-thats-impossible-in-rust/
 - https://the-mikedavis.github.io/posts/german-string-optimizations-in-spellbook/
+- https://15721.courses.cs.cmu.edu/spring2024/
+
+https://github.com/dmitr101/german_strings
 
 ---
 
 # Thank you for your attention
 
-## Questions?
+Questions?
