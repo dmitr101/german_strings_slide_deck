@@ -90,15 +90,21 @@ in this talk I talking strictly about modern consumer computers which are predom
 
 ### So why would we need any more?
 
+<style scoped>
+ul {
+    font-size: 0.6em;
+}
+</style>
+
 <div class="two-columns">
 <div>
 
-![w:420](assets//clang_libcxx_graphs/StringEqualityComparison_performance.png)
+![w:500](assets//clang_libcxx_graphs/StringEqualityComparison_performance.png)
 
 </div>
 <div>
 
-![w:420](assets/clang_libcxx_graphs/StringSorting_performance.png)
+![w:500](assets/clang_libcxx_graphs/StringSorting_performance.png)
 
 </div>
 </div>
@@ -242,31 +248,116 @@ note: While all of the 3 big implementations make different tradeoffs while stay
 
 ---
 
-## What can we do differently?
+## What's lacking?
 
-If we are not bound by the standard and consider some factoids...
+If we are not bound by the standard and have a specific use case in mind, we can optimize for:
 
-* Search and sort operations usually dominate
-* It's common to look at a small chunk of the string
-* Oftentimes a batch of strings all share a common lifetime
-* Most strings are small
+* Search and sort operations
+* Avoiding copies where possible
+* Fast small strings
 * `std::string` *is usually good at the last one*
 
+---
+
+## What's lacking?
+
+<style scoped>
+ul {
+    font-size: 0.5em;
+}
+</style>
+
+Is it not optimal now?
+
+<div class="centered-image">
+
+![w:1000](assets/godbolt_std_comparison.png)
+
+</div>
+
+* Obligatory Godbolt screenshot slide
+
 <!-- 
-note: Memory-mapped files, request scope, etc
+note: We check the size but then basically get the data pointers and call memcmp. For the case of a non-small string it might be bad.
+I'm very grateful for how simple Libstdc++ implementation is as the assembly of both msvc and libc++ is uch longer and more complex due to their SSO representations
 -->
 
 ---
 
+## What's lacking?
+
+<style scoped>
+ul {
+    font-size: 0.5em;
+}
+</style>
+
+Memory latency!
+
+<div class="centered-image">
+
+![w:900](assets/Caches.svg)
+
+</div>
+
+* Obligatory CPU cache and memory latency slide
+
+---
+
+## What's lacking?
+
+What is an appropriate type here?
+
+```cpp
+std::vector<StringType> GlobalStringTable;
+
+void addFromANetworkRequest(const NetworkRequest& request)
+{
+    GlobalStringTable.push_back(request.string());
+}
+
+void addFromAMmap(const MmapRegion& region)
+{
+    GlobalStringTable.push_back(region.string());
+}
+
+void addStatics()
+{
+    GlobalStringTable.push_back("static_string");
+}
+```
+
+---
+
+## What's lacking?
+
+`std::string` is **large** - 32 bytes
+* Suffers under the default calling conventions
+* Takes up precious cache space
+
+<div class="centered-image">
+
+![w:900](assets/godbolt_std_comparison_2.png)
+
+</div>
+
+
+---
+
+
 ## What can we do differently?
 
-## **Everything!**
 
-* *Sometimes* own the data
-* Be immutable
-* 12 bytes for small strings
-* No null termination
 * Always have a 4-byte prefix locally
+* *Sometimes* own the data
+
+<br>
+
+* Immutable
+* 12-byte SSO
+* 4 GBs size limit
+* No null termination
+
 
 <!-- 
 note: We will go over each part now
@@ -441,6 +532,41 @@ branchless, may be counted as SWAR maybe?
 
 ## Looking at benchmarks
 
+<style scoped>
+.benchmark-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0;
+  width: 100%;
+  height: 80%;
+  margin: 0;
+  padding: 0;
+}
+
+.benchmark-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: block;
+  vertical-align: top;
+}
+</style>
+
+<div class="benchmark-grid">
+
+![](assets//clang_libcxx_graphs/StringEqualityComparison_performance.png)
+
+![](assets//clang_libcxx_graphs/StringSorting_performance.png)
+
+![](assets//gcc_graphs/StringEqualityComparison_performance.png)
+
+![](assets//gcc_graphs/StringSorting_performance.png)
+
+</div>
 
 ---
 
