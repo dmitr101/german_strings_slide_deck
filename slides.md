@@ -109,7 +109,7 @@ ul {
 </div>
 </div>
 
-* 50-100% faster search and sorting operations
+* 50-100% faster equality and comparison operations
 * 2x smaller memory footprint for the string object
 
 <!-- 
@@ -252,7 +252,7 @@ note: While all of the 3 big implementations make different tradeoffs while stay
 
 If we are not bound by the standard and have a specific use case in mind, we can optimize for:
 
-* Search and sort operations
+* Equality and ordering operations
 * Avoiding copies where possible
 * Fast small strings
 * `std::string` *is usually good at the last one*
