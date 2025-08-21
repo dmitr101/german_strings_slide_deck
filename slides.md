@@ -342,8 +342,6 @@ void addStatics()
 ## What's lacking?
 
 `std::string` is **large** - 32 bytes
-* Suffers under the default calling conventions
-* Takes up precious cache space
 
 <div class="centered-image">
 
@@ -351,6 +349,8 @@ void addStatics()
 
 </div>
 
+* Suffers under the default calling conventions
+* Takes up precious cache space
 
 ---
 
