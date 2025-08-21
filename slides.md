@@ -358,7 +358,7 @@ void addStatics()
 ## What can we do differently?
 
 
-* Always have a 4-byte prefix locally
+* Always have a prefix locally
 * *Sometimes* own the data
 
 <br>
