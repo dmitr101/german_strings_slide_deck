@@ -537,6 +537,8 @@ int prefix_memcmp(std::uint32_t a, std::uint32_t b, int n)
 }
 ```
 
+* Around 2x faster than `std::memcmp`!
+
 <!-- 
 note: This is approximately 2x faster than std::memcmp for 4 byte values
 branchless, may be counted as SWAR maybe?
