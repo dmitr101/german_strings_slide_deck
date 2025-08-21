@@ -615,7 +615,7 @@ The plan:
 - Replace all `std::string` with `gs::german_string`
 - PROFIT!
 
-* Simon Toths - https://github.com/HappyCerberus/1brc
+* [Optimizing code to run 87x faster](https://simontoth.substack.com/p/daily-bite-of-c-optimizing-code-to) by Šimon Tóth
 
 
 <!-- 
@@ -626,6 +626,7 @@ note: Maybe a demo
 ## Applications - 1BRC
 
 ```cpp
+struct Record { int cnt; float min, max, sum; }
 std::unordered_map<StringType, Record> process_input(std::span<const char> data)
 {
     std::unordered_map<StringType, Record> db;
@@ -641,7 +642,6 @@ std::unordered_map<StringType, Record> process_input(std::span<const char> data)
         }
         update_record(it->second, fp_value);
     }
-
     return db;
 }
 ```
@@ -757,9 +757,6 @@ std::optional<StringType> LSMTree::get(const StringType &key)
 
 ## Applications - Toy LSM-tree KV-store
 
-* A *lot* of string comparisons happen in both write and read paths
-* We can avoid copying data in addition to `<=>` performance boost
-
 <style scoped>
 .no-gap img {
   display: block !important;
@@ -779,6 +776,10 @@ std::optional<StringType> LSMTree::get(const StringType &key)
 ![w:1000](assets/lsm-read-bench.png)
 
 </div>
+
+* A *lot* of string comparisons happen in both write and read paths
+* We can avoid copying data in addition to `<=>` performance boost
+
 
 <!-- 
 note: 
