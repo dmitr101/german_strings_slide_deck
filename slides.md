@@ -286,6 +286,16 @@ I'm very grateful for how simple Libstdc++ implementation is as the assembly of 
 
 ## What's lacking?
 
+<div class="centered-image">
+
+![w:1000](assets/std_string_simple_fire.svg)
+
+</div>
+
+---
+
+## What's lacking?
+
 <style scoped>
 ul {
     font-size: 0.5em;
@@ -407,6 +417,10 @@ By tagging the pointer with 2 bits of data we can assign each string to a *class
 
 - Possibly avoid the cache miss on comparison
 - Neatly becomes the prefix for the SSO string
+
+<br>
+
+* We need to touch the string when we are creating are view to it
 
 ---
 
@@ -533,38 +547,46 @@ branchless, may be counted as SWAR maybe?
 ## Looking at benchmarks
 
 <style scoped>
-.benchmark-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 0;
-  width: 100%;
-  height: 80%;
-  margin: 0;
-  padding: 0;
+.two-columns {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: left;
 }
 
-.benchmark-grid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  margin: 0;
-  padding: 0;
-  border: none;
-  display: block;
-  vertical-align: top;
+.two-columns > div {
+  flex: 1;
+  text-align: left;
+}
+
+.no-gap img {
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.no-gap p {
+  margin: 0 !important;
+  line-height: 0 !important;
 }
 </style>
 
-<div class="benchmark-grid">
+<div class="two-columns">
 
-![](assets//clang_libcxx_graphs/StringEqualityComparison_performance.png)
+<div>
 
-![](assets//clang_libcxx_graphs/StringSorting_performance.png)
+- Clang + `libc++`
+- GCC + `libstdc++`
+- MSVC + `STL`
 
-![](assets//gcc_graphs/StringEqualityComparison_performance.png)
+</div>
 
-![](assets//gcc_graphs/StringSorting_performance.png)
+<div class="no-gap">
+
+![w:600 h:150](assets/clang_graphs_final/performance_summary.png)
+![w:600 h:150](assets/gcc_graphs_final/performance_summary.png)
+![w:600 h:150](assets/msvc_graphs_final/performance_summary.png)
+
+</div>
 
 </div>
 
@@ -599,6 +621,30 @@ The plan:
 <!-- 
 note: Maybe a demo
 -->
+---
+
+## Applications - 1BRC
+
+```cpp
+std::unordered_map<StringType, Record> process_input(std::span<const char> data)
+{
+    std::unordered_map<StringType, Record> db;
+    std::string station, value;
+    while (getline(data, station, ';') && getline(data, value, '\n'))
+    {
+        float fp_value = std::stof(value);
+        auto it = db.find(station);
+        if (it == db.end())
+        {
+            db.emplace(station, Record{1, fp_value, fp_value, fp_value});
+            continue;
+        }
+        update_record(it->second, fp_value);
+    }
+
+    return db;
+}
+```
 
 ---
 
