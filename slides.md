@@ -420,7 +420,7 @@ By tagging the pointer with 2 bits of data we can assign each string to a *class
 
 <br>
 
-* We need to touch the string when we are creating are view to it
+* We need to touch the string memory when we are creating a view to it
 
 ---
 
@@ -630,10 +630,10 @@ struct Record { int cnt; float min, max, sum; }
 std::unordered_map<StringType, Record> process_input(std::span<const char> data)
 {
     std::unordered_map<StringType, Record> db;
-    std::string station, value;
+    StringType station, value;
     while (getline(data, station, ';') && getline(data, value, '\n'))
     {
-        float fp_value = std::stof(value);
+        float fp_value = stof(value);
         auto it = db.find(station);
         if (it == db.end())
         {
